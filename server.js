@@ -8,7 +8,7 @@ const mysql = require("mysql2/promise");
 const path = require("path");
 
 const app = express();
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT || 3001);
 const APP_ORIGIN = process.env.APP_ORIGIN || `http://localhost:${PORT}`;
 const OLLAMA_BASE_URL = (process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:1b";
@@ -48,7 +48,6 @@ async function searchBooks(keyword, limit = 8) {
   const safeLimit = Math.min(Math.max(Number(limit) || 8, 1), 20);
   const term = `%${keyword}%`;
 
-  // Sesuaikan nama kolom bila struktur tabel milikmu berbeda.
   const [rows] = await pool.execute(
     `SELECT b.id_buku, b.judul, b.penulis, b.penerbit, b.tahun_terbit,
             b.total_stok, b.stok_tersedia, k.nama_kategori
@@ -162,9 +161,36 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
     return res.status(400).json({ success: false, error: "Pertanyaan tidak boleh kosong." });
   }
 
+  // Kalimat penolakan resmi sesuai permintaan
+  const REFUSAL_TEXT = "Maaf, saya tidak dapat membantu menjawab pertanyaan di luar topik perpustakaan. Jika Anda memiliki pertanyaan lain yang lebih terkait dengan buku atau literasi, saya akan senang membantu.";
+
+  // === SATPAM PEMBLOKIR OTOMATIS (SYSTEM WHITELIST) ===
+  const lowerQ = question.toLowerCase();
+  
+  // Kata kunci yang diizinkan (berkaitan dengan buku & perpus)
+  const bookKeywords = [
+    "buku", "perpus", "novel", "penulis", "penerbit", "katalog", 
+    "literasi", "baca", "stok", "peminjaman", "isbn", "perpustakaan", 
+    "ringkasan", "sinopsis", "cari", "peminjam", "rekomendasi", "kategori"
+  ];
+
+  // Sapaan umum yang diizinkan agar chatbot tetap ramah
+  const greetings = ["halo", "hi", "selamat", "pagi", "siang", "malam", "terima kasih", "terimakasih", "testing", "test"];
+  const isGreeting = greetings.some(g => lowerQ === g || lowerQ.startsWith(g));
+  const hasBookTerm = bookKeywords.some(term => lowerQ.includes(term));
+
+  // JIKA BUKAN SAPAAN DAN TIDAK ADA KATA KUNCI BUKU/PERPUS -> LANGSUNG TOLAK!
+  if (!isGreeting && !hasBookTerm) {
+    return res.json({
+      success: true,
+      reply: REFUSAL_TEXT,
+      sources: [],
+      model: OLLAMA_MODEL
+    });
+  }
+  // ===================================================
+
   try {
-    // Retrieval sederhana dari MySQL untuk memberi konteks katalog kepada model.
-    // Ini bukan implementasi vector RAG; vector embedding dapat ditambahkan kemudian.
     const books = await searchBooks(question, 8).catch(() => []);
     const bookContext = books.length
       ? books.map((b, i) =>
@@ -172,20 +198,14 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
           `Kategori: ${b.nama_kategori || "Tidak diketahui"}; Tahun: ${b.tahun_terbit || "-"}; ` +
           `Stok tersedia: ${b.stok_tersedia}`
         ).join("\n")
-      : "Tidak ada data katalog yang cocok secara langsung dengan kata kunci pertanyaan.";
+      : "Tidak ada data buku yang cocok secara langsung pada katalog lokal.";
 
-    const systemPrompt = `
-Kamu adalah LibraAI, asisten informasi perpustakaan kampus.
-Jawab dalam Bahasa Indonesia yang jelas dan sopan.
-Gunakan data katalog pada konteks hanya jika relevan.
-Jangan mengarang judul, penulis, tahun terbit, atau jumlah stok.
-Jika data tidak ditemukan, katakan bahwa data belum ditemukan dan sarankan pencarian katalog.
-Untuk status stok, jelaskan bahwa informasi berasal dari data katalog yang tersedia.
-Jangan meminta password, API key, token, atau data pribadi mahasiswa.
+    const systemPrompt = `Kamu adalah LibraAI, asisten resmi Perpustakaan Kampus. Jawab HANYA pertanyaan seputar buku, literasi, dan perpustakaan.`;
 
-KONTEKS KATALOG:
-${bookContext}
-`;
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: question }
+    ];
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), OLLAMA_TIMEOUT_MS);
@@ -197,10 +217,7 @@ ${bookContext}
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: OLLAMA_MODEL,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: question }
-          ],
+          messages: messages,
           stream: false
         }),
         signal: controller.signal
@@ -214,7 +231,7 @@ ${bookContext}
       console.error("Ollama response:", ollamaResponse.status, detail.slice(0, 500));
       return res.status(502).json({
         success: false,
-        error: "Ollama tidak berhasil memproses permintaan. Periksa runtime dan nama model."
+        error: "Ollama tidak berhasil memproses permintaan."
       });
     }
 
@@ -239,10 +256,10 @@ ${bookContext}
   } catch (error) {
     console.error("POST chat:", error.name, error.message);
     if (error.name === "AbortError" || error.name === "TimeoutError") {
-      return res.status(504).json({ success: false, error: "Waktu tunggu AI habis. Coba lagi." });
+      return res.status(504).json({ success: false, error: "Waktu tunggu AI habis." });
     }
     if (error.cause?.code === "ECONNREFUSED" || /fetch failed/i.test(error.message)) {
-      return res.status(503).json({ success: false, error: "Tidak dapat terhubung ke Ollama. Pastikan Ollama sedang berjalan." });
+      return res.status(503).json({ success: false, error: "Tidak dapat terhubung ke Ollama." });
     }
     res.status(500).json({ success: false, error: "Terjadi kesalahan pada server." });
   }
