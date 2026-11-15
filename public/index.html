@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="LibraAI - AI Asisten Perpustakaan Kampus">
+  <title>LibraAI | Perpustakaan Kampus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#"><span class="brand-icon">L</span><span>Libra<span class="brand-green">AI</span></span></a>
+    <p class="nav-label">MENU UTAMA</p>
+    <nav>
+      <a class="nav-link active" href="#home"><span class="nav-ico">🏠</span> <span>Beranda</span></a>
+      <a class="nav-link" href="#categories"><span class="nav-ico">📚</span> <span>Kategori Buku</span></a>
+      <a class="nav-link" href="#availability"><span class="nav-ico">🔎</span> <span>Ketersediaan Buku</span></a>
+      <a class="nav-link" href="#catalog"><span class="nav-ico">📖</span> <span>Katalog Buku</span></a>
+      <a class="nav-link" href="#assistant"><span class="nav-ico">🤖</span> <span>AI Assistant</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <p class="nav-label">INFORMASI</p>
+      <a class="nav-link" href="#hours"><span class="nav-ico">🕒</span> <span>Jam Operasional</span></a>
+      <a class="nav-link" href="#about"><span class="nav-ico">ℹ️</span> <span>Tentang Perpustakaan</span></a>
+      <div class="status-card"><span class="status-dot"></span><div><b>LibraAI aktif</b><small>Asisten perpustakaan</small></div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><span class="eyebrow">PERPUSTAKAAN DIGITAL</span><h1>Selamat datang di LibraAI</h1></div>
+      <div class="top-pill">✨ AI Library Assistant</div>
+    </header>
+
+    <section id="home" class="hero">
+      <div class="hero-copy">
+        <span class="hero-tag">✨ SMART LIBRARY ASSISTANT</span>
+        <h2>Temukan pengetahuan,<br><em>mulai dari sini.</em></h2>
+        <p>Cari buku, periksa ketersediaan, dan tanyakan informasi perpustakaan dengan bantuan AI.</p>
+        <a class="primary-btn" href="#assistant">Mulai bertanya <span class="btn-arrow">→</span></a>
+      </div>
+      <div class="hero-art" aria-hidden="true"><div class="book book-back"></div><div class="book book-mid"></div><div class="book book-front">LIBRARY<br><small>KNOWLEDGE</small></div><div class="sparkle">✨</div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading"><div><span class="eyebrow">JELAJAHI</span><h2>Akses informasi dengan mudah</h2></div></div>
+      <div class="feature-grid">
+        <a class="feature-card" href="#categories"><span class="feature-icon">📚</span><b>Kategori Buku</b><small>Jelajahi koleksi berdasarkan kategori.</small></a>
+        <a class="feature-card" href="#availability"><span class="feature-icon">🔎</span><b>Ketersediaan Buku</b><small>Periksa stok buku di perpustakaan.</small></a>
+        <a class="feature-card" href="#catalog"><span class="feature-icon">📖</span><b>Katalog Buku</b><small>Temukan judul dan penulis buku.</small></a>
+        <a class="feature-card" href="#assistant"><span class="feature-icon">🤖</span><b>AI Assistant</b><small>Tanyakan informasi dengan bahasa sehari-hari.</small></a>
+      </div>
+    </section>
+
+    <section id="categories" class="section">
+      <div class="section-heading"><div><span class="eyebrow">KOLEKSI</span><h2>Kategori Buku</h2></div></div>
+      <div id="category-list" class="category-list"><p class="muted">Memuat kategori...</p></div>
+    </section>
+
+    <section id="catalog" class="section">
+      <div class="section-heading"><div><span class="eyebrow">TEMUKAN BACAAN</span><h2>Katalog Buku</h2></div></div>
+      <div class="search-row"><input id="book-search" type="search" placeholder="Cari judul atau penulis buku..."><button id="search-books" class="primary-btn" type="button">Cari buku</button></div>
+      <div id="book-list" class="book-grid"><p class="muted">Memuat katalog...</p></div>
+    </section>
+
+    <section id="availability" class="section availability-panel">
+      <div><span class="eyebrow">CEK STOK</span><h2>Ketersediaan Buku</h2><p class="muted">Masukkan judul buku untuk melihat status stok.</p></div>
+      <div class="search-row"><input id="availability-search" type="search" placeholder="Contoh: Belajar JavaScript"><button id="check-availability" class="primary-btn" type="button">Periksa</button></div>
+      <div id="availability-result" class="result-area" aria-live="polite"></div>
+    </section>
+
+    <section id="assistant" class="section assistant-section">
+      <div class="section-heading"><div><span class="eyebrow">DIDUKUNG OLLAMA</span><h2>AI Library Assistant</h2><p class="muted">Tanyakan buku, kategori, atau informasi perpustakaan.</p></div><span class="online-label"><i></i> AI Assistant</span></div>
+      <div class="chat-box">
+        <div id="chat-messages" class="chat-messages" aria-live="polite">
+          <div class="message assistant-message"><span class="avatar">🤖</span><div><b>LibraAI</b><p>Halo! Saya LibraAI. Ada yang bisa saya bantu cari di perpustakaan?</p></div></div>
+        </div>
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" maxlength="1000" autocomplete="off" placeholder="Tulis pertanyaanmu di sini..." required>
+          <button class="send-btn" type="submit" aria-label="Kirim pertanyaan">➤</button>
+        </form>
+        <small class="chat-note">Jawaban AI dapat keliru. Periksa kembali informasi penting pada katalog resmi.</small>
+      </div>
+    </section>
+
+    <section class="info-grid">
+      <div id="hours" class="info-card"><span class="eyebrow">KUNJUNGAN</span><h3>Jam Operasional</h3><p>Silakan sesuaikan jam operasional dengan informasi resmi perpustakaan kampus.</p><b>Jam layanan: belum dikonfigurasi</b></div>
+      <div id="about" class="info-card"><span class="eyebrow">TENTANG</span><h3>Tentang Perpustakaan</h3><p>LibraAI merupakan prototipe asisten informasi perpustakaan kampus untuk membantu pencarian katalog dan informasi koleksi.</p></div>
+    </section>
+    <footer>© 2026 LibraAI — Prototipe AI Asisten Perpustakaan Kampus</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
