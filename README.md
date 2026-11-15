@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # LibraAI – AI Asisten Perpustakaan Kampus
 
 Prototipe TP3 menggunakan HTML, CSS, JavaScript, Node.js + Express, MySQL, dan Ollama.
@@ -74,3 +75,14 @@ Fitur chat menggunakan retrieval sederhana dari katalog MySQL berdasarkan kata k
 ## 8. Lima kasus uji TP3
 
 Lihat `TP3-TESTING.md`. Isi hasil, waktu respons, kualitas sumber, penggunaan resource, dan error berdasarkan pengujian nyata. Jangan mengisi hasil sebelum pengujian dilakukan.
+=======
+# AI-ASISTEN-PERPUSTAKAAN-KAMPUS
+Project Kelompok Pengembangan AI Asisten Perpustakaan Kampus
+
+# ANGGOTA KELOMPOK :
+1) Sunaya Agitha Br Ginting (233303030347)
+2) Fitri Almira (233303030351)
+3) Mawar (233303030331)
+4) Dhimas Anggara Kaban (233303030361)
+5) Omega Syahputra Pasaribu (233303030375)
+>>>>>>> 3e5e6df07f28c121b9bd34e6fe545adc032636ed
