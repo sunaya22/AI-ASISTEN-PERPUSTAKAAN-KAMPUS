@@ -1,5 +1,14 @@
 const $ = (selector) => document.querySelector(selector);
 
+// Fungsi pembantu untuk mencari elemen dengan beberapa alternatif ID/Class
+function getElement(selectors) {
+  for (const sel of selectors) {
+    const el = document.querySelector(sel);
+    if (el) return el;
+  }
+  return null;
+}
+
 async function api(url, options = {}) {
   const response = await fetch(url, {
     headers: { "Content-Type": "application/json" },
@@ -16,14 +25,17 @@ function escapeHtml(value = "") {
   }[char]));
 }
 
-// Variabel untuk Pagination
+// Variabel untuk Pagination & Data
 let allBooks = [];
 let currentPage = 1;
-const itemsPerPage = 6; // Jumlah buku per halaman (bisa diubah sesuai selera)
+const itemsPerPage = 6;
 
 async function loadCategories() {
-  const target = $("#category-list");
-  if (!target) return;
+  const target = getElement(["#category-list", "#categories", ".category-list", "#kategori-list"]);
+  if (!target) {
+    console.warn("Elemen kontainer kategori tidak ditemukan di HTML.");
+    return;
+  }
   try {
     const result = await api("/api/categories");
     const list = result.data || [];
@@ -36,7 +48,7 @@ async function loadCategories() {
 }
 
 function renderBooks() {
-  const target = $("#book-list");
+  const target = getElement(["#book-list", "#books", ".book-list", "#katalog-buku"]);
   if (!target) return;
 
   if (!allBooks.length) {
@@ -45,7 +57,6 @@ function renderBooks() {
     return;
   }
 
-  // Hitung data untuk halaman aktif
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedBooks = allBooks.slice(startIndex, endIndex);
@@ -72,7 +83,7 @@ function renderPaginationControls() {
     paginationContainer = document.createElement("div");
     paginationContainer.id = "pagination-container";
     paginationContainer.className = "flex justify-center items-center gap-1.5 mt-8 mb-10 col-span-full flex-wrap";
-    const bookList = $("#book-list");
+    const bookList = getElement(["#book-list", "#books", ".book-list", "#katalog-buku"]);
     if (bookList && bookList.parentNode) {
       bookList.parentNode.insertBefore(paginationContainer, bookList.nextSibling);
     }
@@ -83,7 +94,6 @@ function renderPaginationControls() {
 
   if (totalPages <= 1) return;
 
-  // Helper membuat tombol pagination yang cantik
   const appendBtn = (text, pageNum, isActive = false, isDisabled = false) => {
     const btn = document.createElement("button");
     btn.innerHTML = text;
@@ -98,23 +108,23 @@ function renderPaginationControls() {
       btn.addEventListener("click", () => {
         currentPage = pageNum;
         renderBooks();
-        window.scrollTo({ top: $("#book-list").offsetTop - 120, behavior: 'smooth' });
+        const bl = getElement(["#book-list", "#books", ".book-list", "#katalog-buku"]);
+        if (bl) window.scrollTo({ top: bl.offsetTop - 120, behavior: 'smooth' });
       });
     }
     paginationContainer.appendChild(btn);
   };
 
-  // Tombol Previous
   appendBtn("‹ Prev", currentPage - 1, false, currentPage === 1);
   if (currentPage > 1) {
     paginationContainer.lastChild.onclick = () => {
       currentPage--;
       renderBooks();
-      window.scrollTo({ top: $("#book-list").offsetTop - 120, behavior: 'smooth' });
+      const bl = getElement(["#book-list", "#books", ".book-list", "#katalog-buku"]);
+      if (bl) window.scrollTo({ top: bl.offsetTop - 120, behavior: 'smooth' });
     };
   }
 
-  // Logika Pintar untuk Angka & Titik-titik (...)
   let pages = [];
   if (totalPages <= 7) {
     for (let i = 1; i <= totalPages; i++) pages.push(i);
@@ -128,7 +138,6 @@ function renderPaginationControls() {
     }
   }
 
-  // Render Tombol Nomor / Ellipsis
   pages.forEach(p => {
     if (p === '...') {
       const span = document.createElement("span");
@@ -140,13 +149,13 @@ function renderPaginationControls() {
     }
   });
 
-  // Tombol Next
   appendBtn("Next ›", currentPage + 1, false, currentPage === totalPages);
   if (currentPage < totalPages) {
     paginationContainer.lastChild.onclick = () => {
       currentPage++;
       renderBooks();
-      window.scrollTo({ top: $("#book-list").offsetTop - 120, behavior: 'smooth' });
+      const bl = getElement(["#book-list", "#books", ".book-list", "#katalog-buku"]);
+      if (bl) window.scrollTo({ top: bl.offsetTop - 120, behavior: 'smooth' });
     };
   }
 }
@@ -157,65 +166,75 @@ function removePagination() {
 }
 
 async function loadBooks(query = "") {
-  const target = $("#book-list");
-  const btn = $("#search-books");
+  const target = getElement(["#book-list", "#books", ".book-list", "#katalog-buku"]);
+  const btn = getElement(["#search-books", "#search-btn"]);
   const prevText = btn ? btn.textContent : "";
   if (btn) { btn.disabled = true; btn.textContent = "Memuat..."; }
-  target.innerHTML = '<p class="muted">Memuat katalog...</p>';
+  if (target) target.innerHTML = '<p class="muted">Memuat katalog...</p>';
   removePagination();
 
   try {
     const result = await api(`/api/books?q=${encodeURIComponent(query)}`);
     allBooks = result.data || [];
-    currentPage = 1; // Reset ke halaman 1 setiap kali mencari buku baru
+    currentPage = 1;
     renderBooks();
   } catch (error) {
-    target.innerHTML = `<p class="muted">Gagal memuat katalog: ${escapeHtml(error.message)}</p>`;
+    if (target) target.innerHTML = `<p class="muted">Gagal memuat katalog: ${escapeHtml(error.message)}</p>`;
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = prevText || "Cari buku"; }
   }
 }
 
-const searchBtn = $("#search-books");
-if (searchBtn) searchBtn.addEventListener("click", () => loadBooks($("#book-search").value.trim()));
-const bookSearch = $("#book-search");
-if (bookSearch) bookSearch.addEventListener("keydown", event => {
-  if (event.key === "Enter") loadBooks(event.target.value.trim());
-});
+const searchBtn = getElement(["#search-books", "#search-btn"]);
+const bookSearch = getElement(["#book-search", "#search-input-book"]);
+if (searchBtn && bookSearch) {
+  searchBtn.addEventListener("click", () => loadBooks(bookSearch.value.trim()));
+}
+if (bookSearch) {
+  bookSearch.addEventListener("keydown", event => {
+    if (event.key === "Enter") loadBooks(event.target.value.trim());
+  });
+}
 
-const checkBtn = $("#check-availability");
-if (checkBtn) checkBtn.addEventListener("click", async () => {
-  const query = $("#availability-search").value.trim();
-  const target = $("#availability-result");
-  if (!query) {
-    target.textContent = "Masukkan judul buku terlebih dahulu.";
-    return;
-  }
-  const prevText = checkBtn.textContent;
-  checkBtn.disabled = true;
-  checkBtn.textContent = "Memeriksa...";
-  target.textContent = "Memeriksa ketersediaan...";
-  try {
-    const result = await api(`/api/availability?q=${encodeURIComponent(query)}`);
-    const data = result.data || [];
-    target.innerHTML = data.length
-      ? data.map(book => `<p><b>${escapeHtml(book.judul)}</b> — ${escapeHtml(book.status)} (stok: ${Number(book.stok_tersedia) || 0})</p>`).join("")
-      : "Buku tidak ditemukan pada katalog.";
-  } catch (error) {
-    target.textContent = `Gagal: ${error.message}`;
-  } finally {
-    checkBtn.disabled = false;
-    checkBtn.textContent = prevText || "Periksa";
-  }
-});
+// === LIVE SEARCH KETERSEDIAAN BUKU ===
+const avSearch = getElement(["#availability-search", "#check-search"]);
+const checkTarget = getElement(["#availability-result", "#check-result"]);
+const checkBtn = getElement(["#check-availability", "#check-btn"]);
 
-const avSearch = $("#availability-search");
-if (avSearch) avSearch.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") checkBtn && checkBtn.click();
-});
+if (checkBtn) checkBtn.style.display = "none";
+
+if (avSearch && checkTarget) {
+  avSearch.addEventListener("input", async (e) => {
+    const query = e.target.value.trim();
+    if (!query) {
+      checkTarget.innerHTML = "";
+      return;
+    }
+
+    checkTarget.innerHTML = "Memeriksa ketersediaan...";
+
+    try {
+      const result = await api(`/api/availability?q=${encodeURIComponent(query)}`);
+      const data = result.data || [];
+      
+      if (data.length === 0) {
+        checkTarget.innerHTML = "Buku tidak ditemukan pada katalog.";
+        return;
+      }
+
+      checkTarget.innerHTML = data.slice(0, 5).map(book => {
+        const available = Number(book.stok_tersedia) > 0;
+        return `<p><b>${escapeHtml(book.judul)}</b> — <span class="${available ? "text-emerald-600" : "text-red-600"}">${escapeHtml(book.status)}</span> (stok: ${Number(book.stok_tersedia) || 0})</p>`;
+      }).join("");
+    } catch (error) {
+      checkTarget.textContent = `Gagal: ${error.message}`;
+    }
+  });
+}
 
 function addMessage(role, text) {
-  const target = $("#chat-messages");
+  const target = getElement(["#chat-messages", "#chat-box"]);
+  if (!target) return null;
   const node = document.createElement("div");
   node.className = role === "user" ? "message user-message" : "message assistant-message";
   if (role === "user") {
@@ -237,41 +256,43 @@ function addMessage(role, text) {
   return node;
 }
 
-const chatForm = $("#chat-form");
-if (chatForm) chatForm.addEventListener("submit", async event => {
-  event.preventDefault();
-  const input = $("#chat-input");
-  const sendBtn = chatForm.querySelector('button[type="submit"]');
-  const message = input.value.trim();
-  if (!message) return;
+const chatForm = getElement(["#chat-form", "#form-chat"]);
+if (chatForm) {
+  chatForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    const input = getElement(["#chat-input", "#input-chat"]);
+    const sendBtn = chatForm.querySelector('button[type="submit"]');
+    const message = input ? input.value.trim() : "";
+    if (!message) return;
 
-  addMessage("user", message);
-  input.value = "";
-  if (sendBtn) sendBtn.disabled = true;
-  const pending = addMessage("assistant", "Sedang memproses pertanyaan...");
-  const paragraph = pending.querySelector("p");
+    addMessage("user", message);
+    if (input) input.value = "";
+    if (sendBtn) sendBtn.disabled = true;
+    const pending = addMessage("assistant", "Sedang memproses pertanyaan...");
+    const paragraph = pending ? pending.querySelector("p") : null;
 
-  try {
-    const result = await api("/api/chat", {
-      method: "POST",
-      body: JSON.stringify({ message })
-    });
-    paragraph.textContent = result.reply || "Tidak ada jawaban.";
-    if (result.sources && result.sources.length) {
-      const sourceText = result.sources.map(source => source.title).join(", ");
-      const source = document.createElement("small");
-      source.className = "muted";
-      source.textContent = `Sumber katalog: ${sourceText}`;
-      const bodyDiv = pending.querySelector("div");
-      if (bodyDiv) bodyDiv.append(source);
+    try {
+      const result = await api("/api/chat", {
+        method: "POST",
+        body: JSON.stringify({ message })
+      });
+      if (paragraph) paragraph.textContent = result.reply || "Tidak ada jawaban.";
+      if (result.sources && result.sources.length && pending) {
+        const sourceText = result.sources.map(source => source.title).join(", ");
+        const source = document.createElement("small");
+        source.className = "muted";
+        source.textContent = `Sumber katalog: ${sourceText}`;
+        const bodyDiv = pending.querySelector("div");
+        if (bodyDiv) bodyDiv.append(source);
+      }
+    } catch (error) {
+      if (paragraph) paragraph.textContent = `Maaf, ${error.message}`;
+    } finally {
+      if (sendBtn) sendBtn.disabled = false;
+      if (input) input.focus();
     }
-  } catch (error) {
-    paragraph.textContent = `Maaf, ${error.message}`;
-  } finally {
-    if (sendBtn) sendBtn.disabled = false;
-    input.focus();
-  }
-});
+  });
+}
 
 loadCategories();
 loadBooks();
